@@ -633,6 +633,16 @@ public class AureliumSkills extends JavaPlugin {
 		statRegistry.register("luck", Stats.LUCK);
 		statRegistry.register("wisdom", Stats.WISDOM);
 		statRegistry.register("toughness", Stats.TOUGHNESS);
+		statRegistry.register("defense", Stats.DEFENSE);
+		statRegistry.register("damage", Stats.DAMAGE);
+		statRegistry.register("speed", Stats.SPEED);
+		statRegistry.register("crit_chance", Stats.CRITICAL_CHANCE);
+		statRegistry.register("crit_damage", Stats.CRITICAL_DAMAGE);
+		statRegistry.register("magic_find", Stats.MAGIC_FIND);
+		statRegistry.register("attack_speed", Stats.ATTACK_SPEED);
+		statRegistry.register("farming_fortune", Stats.FARMING_FORTUNE);
+		statRegistry.register("mining_fortune", Stats.MINING_FORTUNE);
+		statRegistry.register("foraging_fortune", Stats.FORAGING_FORTUNE);
 	}
 
 	private void registerSkills() {
