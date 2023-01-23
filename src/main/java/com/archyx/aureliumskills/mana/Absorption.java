@@ -67,6 +67,7 @@ public class Absorption extends ReadiedManaAbility {
         // Decrease mana and cancel event
         double mana = playerData.getMana() - event.getDamage() * 2;
         if (mana > 0) {
+            //s
             playerData.setMana(mana);
             event.setCancelled(true);
             // Particle effects and sound
