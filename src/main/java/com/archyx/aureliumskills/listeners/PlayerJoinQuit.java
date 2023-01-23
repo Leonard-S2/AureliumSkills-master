@@ -22,6 +22,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import static org.bukkit.Bukkit.getLogger;
+
 public class PlayerJoinQuit implements Listener {
 
 	private final AureliumSkills plugin;

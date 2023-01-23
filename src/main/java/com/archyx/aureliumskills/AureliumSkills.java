@@ -58,8 +58,6 @@ import com.archyx.aureliumskills.skills.endurance.EnduranceLeveler;
 import com.archyx.aureliumskills.skills.excavation.ExcavationLeveler;
 import com.archyx.aureliumskills.skills.excavation.ExcavationLootHandler;
 import com.archyx.aureliumskills.skills.farming.FarmingAbilities;
-import com.archyx.aureliumskills.skills.farming.FarmingHarvestLeveler;
-import com.archyx.aureliumskills.skills.farming.FarmingInteractLeveler;
 import com.archyx.aureliumskills.skills.farming.FarmingLeveler;
 import com.archyx.aureliumskills.skills.fighting.FightingAbilities;
 import com.archyx.aureliumskills.skills.fighting.FightingLeveler;
@@ -87,7 +85,6 @@ import com.archyx.aureliumskills.ui.SkillBossBar;
 import com.archyx.aureliumskills.util.armor.ArmorListener;
 import com.archyx.aureliumskills.util.version.ReleaseData;
 import com.archyx.aureliumskills.util.version.UpdateChecker;
-import com.archyx.aureliumskills.util.version.VersionUtils;
 import com.archyx.aureliumskills.util.world.WorldManager;
 import com.archyx.slate.Slate;
 import com.archyx.slate.menu.MenuManager;
@@ -552,11 +549,6 @@ public class AureliumSkills extends JavaPlugin {
 		regionBlockListener = new RegionBlockListener(this);
 		pm.registerEvents(regionBlockListener, this);
 		pm.registerEvents(new FarmingLeveler(this), this);
-		if (VersionUtils.isAtLeastVersion(16)) {
-			pm.registerEvents(new FarmingHarvestLeveler(this), this);
-		} else {
-			pm.registerEvents(new FarmingInteractLeveler(this), this);
-		}
 		pm.registerEvents(new ForagingLeveler(this), this);
 		pm.registerEvents(new MiningLeveler(this), this);
 		pm.registerEvents(new ExcavationLeveler(this), this);
@@ -636,8 +628,8 @@ public class AureliumSkills extends JavaPlugin {
 		statRegistry.register("defense", Stats.DEFENSE);
 		statRegistry.register("damage", Stats.DAMAGE);
 		statRegistry.register("speed", Stats.SPEED);
-		statRegistry.register("crit_chance", Stats.CRITICAL_CHANCE);
-		statRegistry.register("crit_damage", Stats.CRITICAL_DAMAGE);
+		statRegistry.register("critical_chance", Stats.CRITICAL_CHANCE);
+		statRegistry.register("critical_damage", Stats.CRITICAL_DAMAGE);
 		statRegistry.register("magic_find", Stats.MAGIC_FIND);
 		statRegistry.register("attack_speed", Stats.ATTACK_SPEED);
 		statRegistry.register("farming_fortune", Stats.FARMING_FORTUNE);

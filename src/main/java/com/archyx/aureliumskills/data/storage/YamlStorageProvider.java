@@ -1,5 +1,4 @@
 package com.archyx.aureliumskills.data.storage;
-
 import com.archyx.aureliumskills.AureliumSkills;
 import com.archyx.aureliumskills.ability.AbstractAbility;
 import com.archyx.aureliumskills.configuration.Option;
@@ -27,17 +26,13 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-
 public class YamlStorageProvider extends StorageProvider {
-
     public YamlStorageProvider(AureliumSkills plugin) {
         super(plugin);
     }
-
     @Override
     public void load(Player player) {
         File file = new File(plugin.getDataFolder() + "/playerdata/" + player.getUniqueId() + ".yml");
@@ -136,7 +131,6 @@ public class YamlStorageProvider extends StorageProvider {
             createNewPlayer(player);
         }
     }
-
     @Override
     @Nullable
     public PlayerDataState loadState(UUID uuid) {
@@ -180,6 +174,39 @@ public class YamlStorageProvider extends StorageProvider {
             }
         }
         return null;
+    }
+
+    @Override
+    public boolean applyState(PlayerDataState state) {
+        File file = new File(plugin.getDataFolder() + "/playerdata/" + state.getUuid() + ".yml");
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+        try {
+            config.set("uuid", state.getUuid());
+            // Save skill data
+            Map<Skill, Integer> skillLevels = state.getSkillLevels();
+            Map<Skill, Double> skillXp = state.getSkillXp();
+            for (Skill skill : Skills.values()) {
+                String path = "skills." + skill.toString().toLowerCase(Locale.ROOT) + ".";
+                config.set(path + "level", skillLevels.get(skill));
+                config.set(path + "xp", skillXp.get(skill));
+            }
+            config.set("stat_modifiers", null);
+            // Save stat modifiers
+            int count = 0;
+            for (StatModifier modifier : state.getStatModifiers().values()) {
+                String path = "stat_modifiers." + count + ".";
+                config.set(path + "name", modifier.getName());
+                config.set(path + "stat", modifier.getStat().toString().toLowerCase(Locale.ROOT));
+                config.set(path + "value", modifier.getValue());
+                count++;
+            }
+            config.set("mana", state.getMana());
+            config.save(file); // Save the file
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
@@ -248,7 +275,6 @@ public class YamlStorageProvider extends StorageProvider {
         }
         playerData.setSaving(false); // Unlock
     }
-
     @Override
     public void loadBackup(FileConfiguration config, CommandSender sender) {
         ConfigurationSection playerDataSection = config.getConfigurationSection("player_data");
@@ -284,7 +310,6 @@ public class YamlStorageProvider extends StorageProvider {
             }
         }
     }
-
     @Override
     public void updateLeaderboards() {
         LeaderboardManager manager = plugin.getLeaderboardManager();
@@ -298,7 +323,6 @@ public class YamlStorageProvider extends StorageProvider {
         List<SkillValue> averageLeaderboard = new ArrayList<>();
         // Add players already in memory
         Set<UUID> loadedFromMemory = addLoadedPlayersToLeaderboards(leaderboards, powerLeaderboard, averageLeaderboard);
-
         File playerDataFolder = new File(plugin.getDataFolder() + "/playerdata");
         // Load data from files
         if (playerDataFolder.exists() && playerDataFolder.isDirectory()) {
@@ -321,7 +345,6 @@ public class YamlStorageProvider extends StorageProvider {
                                     // Add to lists
                                     SkillValue skillLevel = new SkillValue(id, level, xp);
                                     leaderboards.get(skill).add(skillLevel);
-
                                     if (OptionL.isEnabled(skill)) {
                                         powerLevel += level;
                                         powerXp += xp;
@@ -345,7 +368,6 @@ public class YamlStorageProvider extends StorageProvider {
         }
         sortLeaderboards(leaderboards, powerLeaderboard, averageLeaderboard);
     }
-
     @Override
     public void delete(UUID uuid) throws IOException {
         File file = new File(plugin.getDataFolder() + "/playerdata/" + uuid.toString() + ".yml");
@@ -358,5 +380,4 @@ public class YamlStorageProvider extends StorageProvider {
             throw new IOException("File not found in playerdata folder");
         }
     }
-
 }

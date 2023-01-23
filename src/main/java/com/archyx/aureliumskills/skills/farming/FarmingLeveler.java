@@ -6,39 +6,29 @@ import com.archyx.aureliumskills.configuration.Option;
 import com.archyx.aureliumskills.configuration.OptionL;
 import com.archyx.aureliumskills.leveler.SkillLeveler;
 import com.archyx.aureliumskills.skills.Skills;
-import com.archyx.aureliumskills.source.SourceTag;
-import com.archyx.aureliumskills.util.block.BlockUtil;
-import com.cryptomorin.xseries.XBlock;
-import com.cryptomorin.xseries.XMaterial;
+import com.archyx.aureliumskills.stats.Stats;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.data.type.CaveVinesPlant;
-import org.bukkit.block.data.type.SeaPickle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.inventory.ItemStack;
 
+import java.util.Collection;
+
+@SuppressWarnings("DataFlowIssue")
 public class FarmingLeveler extends SkillLeveler implements Listener {
-
-	private final FarmingAbilities farmingAbilities;
 
 	public FarmingLeveler(AureliumSkills plugin) {
 		super(plugin, Ability.FARMER);
-		this.farmingAbilities = new FarmingAbilities(plugin);
 	}
 	
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockBreak(BlockBreakEvent event) {
 		if (!OptionL.isEnabled(Skills.FARMING)) return;
 		// Check cancelled
-		if (OptionL.getBoolean(Option.FARMING_CHECK_CANCELLED) && event.isCancelled()) {
-			return;
-		}
 		Player player = event.getPlayer();
 		if (blockXpGainLocation(event.getBlock().getLocation(), player)) return;
 		Block block = event.getBlock();
@@ -47,128 +37,24 @@ public class FarmingLeveler extends SkillLeveler implements Listener {
 		for (FarmingSource source : FarmingSource.values()) {
 			if (!source.isMatch(block)) continue;
 			// Check block replace
-			if (source.shouldCheckBlockReplace() && OptionL.getBoolean(Option.CHECK_BLOCK_REPLACE) && plugin.getRegionManager().isPlacedBlock(block)) {
+			if (source.shouldCheckBlockReplace() && OptionL.getBoolean(Option.CHECK_BLOCK_REPLACE) && plugin.getRegionManager().isPlacedBlock(block)){
 				return;
 			}
+			event.setCancelled(true);
 
-			double multiplier = 1.0;
-			// Handle sugar cane
-			if (source == FarmingSource.SUGAR_CANE) {
-				int numBroken = 1;
-				BlockState above = block.getRelative(BlockFace.UP).getState();
-				if (XBlock.isSugarCane(above.getType())) {
-					if (!plugin.getRegionManager().isPlacedBlock(above.getBlock())) {
-						numBroken++;
-					}
-					BlockState aboveAbove = block.getRelative(BlockFace.UP).getRelative(BlockFace.UP).getState();
-					if (XBlock.isSugarCane(aboveAbove.getType())) {
-						if (!plugin.getRegionManager().isPlacedBlock(aboveAbove.getBlock())) {
-							numBroken++;
-						}
-					}
-				}
-				multiplier = numBroken;
-			}
-			// Handle blocks that grow upwards
-			if (source == FarmingSource.BAMBOO || source == FarmingSource.CACTUS || source == FarmingSource.KELP) {
-				int numBroken = 1;
-				if (OptionL.getBoolean(Option.CHECK_BLOCK_REPLACE) && plugin.getRegionManager().isPlacedBlock(block)) {
-					if (!source.isMatch(block.getRelative(BlockFace.UP)) || plugin.getRegionManager().isPlacedBlock(block.getRelative(BlockFace.UP))) {
-						return;
-					}
-					numBroken = 0;
-				}
-				numBroken += getSameBlocksAbove(block.getRelative(BlockFace.UP), source, 0);
-				multiplier = numBroken;
-			}
-			// Handle sea pickles
-			if (source == FarmingSource.SEA_PICKLE) {
-				if (block.getBlockData() instanceof SeaPickle) {
-					SeaPickle seaPickle = (SeaPickle) block.getBlockData();
-					multiplier = seaPickle.getPickles();
-				}
-			}
-			// Handle sweet berry bush
-			if (source == FarmingSource.SWEET_BERRY_BUSH) {
-				multiplier = BlockUtil.getGrowthStage(block) - 1;
-			}
-			// Handle glow berries
-			if (source == FarmingSource.GLOW_BERRIES) {
-				if (!(block.getBlockData() instanceof CaveVinesPlant)) return;
-				CaveVinesPlant caveVinesPlant = (CaveVinesPlant) block.getBlockData();
-				if (!caveVinesPlant.isBerries()) return; // Only give xp if has berries
-			}
-			// Give XP
-			giveXp(player, getAbilityXp(player, source) * multiplier, source, block);
+			double farmingFortune = plugin.getPlayerManager().getPlayerData(player.getUniqueId()).getStatLevel(Stats.FARMING_FORTUNE);
+			//formula 100% + (farmingFortune * 1%)
+			double multiplier = 1 + (farmingFortune * 0.01);
+			plugin.getLeveler().addXp(player, Skills.FARMING, getAbilityXp(player, source));
+			Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
+			drops.forEach(itemStack -> {
+				itemStack.setAmount((int) (itemStack.getAmount() * multiplier));
+				player.getInventory().addItem(itemStack);
+			});
 			break;
 		}
+		block.setType(Material.AIR);
 		// Check custom blocks
 		checkCustomBlocks(player, block, Skills.FARMING);
 	}
-
-	protected void giveXp(Player player, double amount, FarmingSource source, Block block) {
-		// Give XP
-		plugin.getLeveler().addXp(player, Skills.FARMING, amount);
-		// Handle abilities
-		if (hasTag(source, SourceTag.BOUNTIFUL_HARVEST_APPLICABLE)) {
-			farmingAbilities.bountifulHarvest(player, block);
-		}
-		if (hasTag(source, SourceTag.TRIPLE_HARVEST_APPLICABLE)) {
-			farmingAbilities.tripleHarvest(player, block);
-		}
-	}
-
-	private int getSameBlocksAbove(Block block, FarmingSource source, int num) {
-		if (source.isMatch(block)) {
-			if (OptionL.getBoolean(Option.CHECK_BLOCK_REPLACE) && plugin.getRegionManager().isPlacedBlock(block)) {
-				return num;
-			}
-			num++;
-			return getSameBlocksAbove(block.getRelative(BlockFace.UP), source, num);
-		}
-		return num;
-	}
-
-	protected void handleRightClick(Player player, Block block) {
-		if (blockXpGainLocation(block.getLocation(), player)) return;
-		if (blockXpGainPlayer(player)) return;
-
-		for (FarmingSource source : FarmingSource.values()) {
-			if (!source.isRightClickHarvestable()) continue;
-
-			if (!source.isMatch(block)) continue;
-			if (player.isSneaking() && isHoldingItem(player)) {
-				return;
-			}
-
-			// Handle sweet berry bush
-			if (source == FarmingSource.SWEET_BERRY_BUSH) {
-				final double multiplier = BlockUtil.getGrowthStage(block) - 1;
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						if (block.getType() == XMaterial.SWEET_BERRY_BUSH.parseMaterial()) {
-							if (BlockUtil.getGrowthStage(block) <= 1) {
-								giveXp(player, getAbilityXp(player, source) * multiplier, source, block);
-							}
-						}
-					}
-				}.runTaskLater(plugin, 1L);
-			}
-			// Handle glow berries
-			if (source == FarmingSource.GLOW_BERRIES) {
-				if (!(block.getBlockData() instanceof CaveVinesPlant)) return;
-				CaveVinesPlant caveVinesPlant = (CaveVinesPlant) block.getBlockData();
-				if (caveVinesPlant.isBerries()) {
-					giveXp(player, getAbilityXp(player, source), source, block);
-				}
-			}
-			break;
-		}
-	}
-
-	protected boolean isHoldingItem(Player player) {
-		return player.getInventory().getItemInMainHand().getType() != Material.AIR || player.getInventory().getItemInOffHand().getType() != Material.AIR;
-	}
-
 }

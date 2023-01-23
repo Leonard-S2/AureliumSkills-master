@@ -1,6 +1,4 @@
 package com.archyx.aureliumskills.data.storage;
-
-
 import com.archyx.aureliumskills.AureliumSkills;
 import com.archyx.aureliumskills.configuration.OptionL;
 import com.archyx.aureliumskills.data.PlayerData;
@@ -24,20 +22,15 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.util.*;
-
 public abstract class StorageProvider {
-
     public final AureliumSkills plugin;
     public final PlayerManager playerManager;
-
     public StorageProvider(AureliumSkills plugin) {
         this.playerManager = plugin.getPlayerManager();
         this.plugin = plugin;
     }
-
     public PlayerData createNewPlayer(Player player) {
         PlayerData playerData = new PlayerData(player, plugin);
         // Set all skills to level 1 for new players
@@ -56,13 +49,11 @@ public abstract class StorageProvider {
         }.runTask(plugin);
         return playerData;
     }
-
     protected void sendErrorMessageToPlayer(Player player, Exception e) {
         player.sendMessage(ChatColor.RED + "There was an error loading your skill data: " + e.getMessage() +
                 ". Please report the error to your server administrator. To prevent your data from resetting permanently" +
                 ", your skill data will not be saved. Try relogging to attempt loading again.");
     }
-
     protected void applyData(PlayerData playerData, Map<Skill, Integer> levels, Map<Skill, Double> xpLevels) {
         for (Stat stat : plugin.getStatRegistry().getStats()) {
             playerData.setStatLevel(stat, 0);
@@ -82,7 +73,6 @@ public abstract class StorageProvider {
         // Immediately save to file
         save(playerData.getPlayer(), false);
     }
-
     protected Map<Skill, Integer> getLevelsFromBackup(ConfigurationSection playerDataSection, String stringId) {
         Map<Skill, Integer> levels = new HashMap<>();
         for (Skill skill : Skills.values()) {
@@ -91,7 +81,6 @@ public abstract class StorageProvider {
         }
         return levels;
     }
-
     protected Map<Skill, Double> getXpLevelsFromBackup(ConfigurationSection playerDataSection, String stringId) {
         Map<Skill, Double> xpLevels = new HashMap<>();
         for (Skill skill : Skills.values()) {
@@ -100,7 +89,6 @@ public abstract class StorageProvider {
         }
         return xpLevels;
     }
-
     protected Set<UUID> addLoadedPlayersToLeaderboards(Map<Skill, List<SkillValue>> leaderboards, List<SkillValue> powerLeaderboard, List<SkillValue> averageLeaderboard) {
         Set<UUID> loadedFromMemory = new HashSet<>();
         for (PlayerData playerData : playerManager.getPlayerDataMap().values()) {
@@ -114,7 +102,6 @@ public abstract class StorageProvider {
                 // Add to lists
                 SkillValue skillLevel = new SkillValue(id, level, xp);
                 leaderboards.get(skill).add(skillLevel);
-
                 if (OptionL.isEnabled(skill)) {
                     powerLevel += level;
                     powerXp += xp;
@@ -127,12 +114,10 @@ public abstract class StorageProvider {
             double averageLevel = (double) powerLevel / numEnabled;
             SkillValue averageValue = new SkillValue(id, 0, averageLevel);
             averageLeaderboard.add(averageValue);
-
             loadedFromMemory.add(playerData.getPlayer().getUniqueId());
         }
         return loadedFromMemory;
     }
-
     protected void sortLeaderboards(Map<Skill, List<SkillValue>> leaderboards, List<SkillValue> powerLeaderboard, List<SkillValue> averageLeaderboard) {
         LeaderboardManager manager = plugin.getLeaderboardManager();
         LeaderboardSorter sorter = new LeaderboardSorter();
@@ -142,7 +127,6 @@ public abstract class StorageProvider {
         powerLeaderboard.sort(sorter);
         AverageSorter averageSorter = new AverageSorter();
         averageLeaderboard.sort(averageSorter);
-
         // Add skill leaderboards to map
         for (Skill skill : Skills.values()) {
             manager.setLeaderboard(skill, leaderboards.get(skill));
@@ -151,9 +135,7 @@ public abstract class StorageProvider {
         manager.setAverageLeaderboard(averageLeaderboard);
         manager.setSorting(false);
     }
-
     public abstract void load(Player player);
-
     /**
      * Loads a snapshot of player data for an offline player
      *
@@ -163,16 +145,20 @@ public abstract class StorageProvider {
     @Nullable
     public abstract PlayerDataState loadState(UUID uuid);
 
+    /**
+     * Applies the given PlayerData state to storage. Will override
+     * previously saved data.
+     *
+     * @param state The state to apply, where the uuid is the same uuid the data is applied to.
+     * @return True if the operation was successful, false if otherwise.
+     */
+    public abstract boolean applyState(PlayerDataState state);
+
     public void save(Player player) {
         save(player, true);
     }
-
     public abstract void save(Player player, boolean removeFromMemory);
-
     public abstract void loadBackup(FileConfiguration file, CommandSender sender);
-
     public abstract void updateLeaderboards();
-
     public abstract void delete(UUID uuid) throws IOException;
-
 }
