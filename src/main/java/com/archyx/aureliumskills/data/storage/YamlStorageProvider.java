@@ -1,4 +1,5 @@
 package com.archyx.aureliumskills.data.storage;
+
 import com.archyx.aureliumskills.AureliumSkills;
 import com.archyx.aureliumskills.ability.AbstractAbility;
 import com.archyx.aureliumskills.configuration.Option;
@@ -26,13 +27,17 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+
 public class YamlStorageProvider extends StorageProvider {
+
     public YamlStorageProvider(AureliumSkills plugin) {
         super(plugin);
     }
+
     @Override
     public void load(Player player) {
         File file = new File(plugin.getDataFolder() + "/playerdata/" + player.getUniqueId() + ".yml");
@@ -131,6 +136,7 @@ public class YamlStorageProvider extends StorageProvider {
             createNewPlayer(player);
         }
     }
+
     @Override
     @Nullable
     public PlayerDataState loadState(UUID uuid) {
@@ -275,6 +281,7 @@ public class YamlStorageProvider extends StorageProvider {
         }
         playerData.setSaving(false); // Unlock
     }
+
     @Override
     public void loadBackup(FileConfiguration config, CommandSender sender) {
         ConfigurationSection playerDataSection = config.getConfigurationSection("player_data");
@@ -310,6 +317,7 @@ public class YamlStorageProvider extends StorageProvider {
             }
         }
     }
+
     @Override
     public void updateLeaderboards() {
         LeaderboardManager manager = plugin.getLeaderboardManager();
@@ -323,6 +331,7 @@ public class YamlStorageProvider extends StorageProvider {
         List<SkillValue> averageLeaderboard = new ArrayList<>();
         // Add players already in memory
         Set<UUID> loadedFromMemory = addLoadedPlayersToLeaderboards(leaderboards, powerLeaderboard, averageLeaderboard);
+
         File playerDataFolder = new File(plugin.getDataFolder() + "/playerdata");
         // Load data from files
         if (playerDataFolder.exists() && playerDataFolder.isDirectory()) {
@@ -345,6 +354,7 @@ public class YamlStorageProvider extends StorageProvider {
                                     // Add to lists
                                     SkillValue skillLevel = new SkillValue(id, level, xp);
                                     leaderboards.get(skill).add(skillLevel);
+
                                     if (OptionL.isEnabled(skill)) {
                                         powerLevel += level;
                                         powerXp += xp;
@@ -368,6 +378,7 @@ public class YamlStorageProvider extends StorageProvider {
         }
         sortLeaderboards(leaderboards, powerLeaderboard, averageLeaderboard);
     }
+
     @Override
     public void delete(UUID uuid) throws IOException {
         File file = new File(plugin.getDataFolder() + "/playerdata/" + uuid.toString() + ".yml");
@@ -380,4 +391,5 @@ public class YamlStorageProvider extends StorageProvider {
             throw new IOException("File not found in playerdata folder");
         }
     }
+
 }
